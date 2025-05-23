@@ -1,0 +1,14 @@
+{
+  "db-2": [
+    {
+      "baseProperties": {
+        "name": "App1Field",
+        "id": "db-3",
+        "type": "dynamicField",
+        "library": "primeng",
+        "formName": ""
+      },
+      "libraryComponent": "App1"
+    }
+  ]
+}
