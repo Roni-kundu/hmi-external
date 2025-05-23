@@ -11,17 +11,29 @@ type Direction = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
 @Component({
   selector: 'app1',
   template: `
-    <!-- Snake Game UI -->
+    <!-- Snake Game UI with High Score, Difficulty, and Sound -->
     <div class="game-container">
-      <canvas #gameCanvas width="400" height="400"></canvas>
-      <div class="score">Score: {{ score }}</div>
+      <canvas #gameCanvas width="400" height="400"
+        (touchstart)="onTouchStart($event)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)">
+      </canvas>
+      <div class="score">Score: {{ score }} | High Score: {{ highScore }}</div>
+      <div class="difficulty">
+        <label for="diff">Difficulty:</label>
+        <select id="diff" [(ngModel)]="difficulty" (change)="changeDifficulty()">
+          <option *ngFor="let d of difficulties" [value]="d.value">{{ d.label }}</option>
+        </select>
+      </div>
       <button (click)="startGame()">Start Game</button>
+      <audio #eatSound src="assets/eat.mp3"></audio>
+      <audio #gameOverSound src="assets/gameover.mp3"></audio>
     </div>
   `,
   styles: [`
     .game-container { display: flex; flex-direction: column; align-items: center; }
-    canvas { border: 2px solid #333; background: #fafafa; margin-bottom: 10px; }
-    .score { font-size: 18px; margin-bottom: 10px; }
+    canvas { border: 2px solid #333; background: #fafafa; margin-bottom: 10px; touch-action: none; }
+    .score { font-size: 18px; margin-bottom: 8px; }
+    .difficulty { margin-bottom: 8px; }
+    select { font-size: 16px; margin-left: 5px; }
     button { padding: 8px 16px; font-size: 16px; }
   `]
 })
@@ -34,10 +46,32 @@ export class App1 extends CommonExternalComponent {
   private ball: Point = { x: 10, y: 10 };
   private intervalId: ReturnType<typeof setInterval> | null = null;
   public score: number = 0;
+  public highScore: number = 0;
+  public difficulty: string = 'normal';
+  public difficulties = [
+    { label: 'Easy', value: 'easy' },
+    { label: 'Normal', value: 'normal' },
+    { label: 'Hard', value: 'hard' }
+  ];
+  private speedMap: Record<string, number> = {
+    easy: 160,
+    normal: 110,
+    hard: 70
+  };
+  private eatAudio!: HTMLAudioElement;
+  private gameOverAudio!: HTMLAudioElement;
+
+  // For touch controls
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
 
   ngAfterViewInit(): void {
     this.draw();
     window.addEventListener('keydown', this.handleKey.bind(this));
+    this.eatAudio = document.querySelector('audio[src*="eat"]') as HTMLAudioElement;
+    this.gameOverAudio = document.querySelector('audio[src*="gameover"]') as HTMLAudioElement;
+    const savedHighScore = localStorage.getItem('snake_high_score');
+    if (savedHighScore) this.highScore = Number(savedHighScore);
   }
 
   startGame(): void {
@@ -47,7 +81,15 @@ export class App1 extends CommonExternalComponent {
     this.score = 0;
     this.placeBall();
     if (this.intervalId) clearInterval(this.intervalId);
-    this.intervalId = setInterval(() => this.gameLoop(), 120);
+    this.intervalId = setInterval(() => this.gameLoop(), this.speedMap[this.difficulty]);
+    this.draw();
+  }
+
+  changeDifficulty(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = setInterval(() => this.gameLoop(), this.speedMap[this.difficulty]);
+    }
   }
 
   private handleKey(event: KeyboardEvent): void {
@@ -84,6 +126,11 @@ export class App1 extends CommonExternalComponent {
       this.snake.some(seg => seg.x === head.x && seg.y === head.y)
     ) {
       if (this.intervalId) clearInterval(this.intervalId);
+      this.playGameOverSound();
+      if (this.score > this.highScore) {
+        this.highScore = this.score;
+        localStorage.setItem('snake_high_score', String(this.highScore));
+      }
       alert('Game Over! Final Score: ' + this.score);
       return;
     }
@@ -93,6 +140,7 @@ export class App1 extends CommonExternalComponent {
     // Eat ball
     if (head.x === this.ball.x && head.y === this.ball.y) {
       this.score++;
+      this.playEatSound();
       this.placeBall();
     } else {
       this.snake.pop();
@@ -142,13 +190,55 @@ export class App1 extends CommonExternalComponent {
     );
     ctx.fill();
   }
+
+  private playEatSound(): void {
+    if (this.eatAudio) {
+      this.eatAudio.currentTime = 0;
+      this.eatAudio.play().catch(() => {});
+    }
+  }
+
+  private playGameOverSound(): void {
+    if (this.gameOverAudio) {
+      this.gameOverAudio.currentTime = 0;
+      this.gameOverAudio.play().catch(() => {});
+    }
+  }
+
+  // Touch controls for mobile
+  onTouchStart(event: TouchEvent): void {
+    if (event.touches.length === 1) {
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
+    }
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    // Prevent scrolling
+    event.preventDefault();
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    if (event.changedTouches.length !== 1) return;
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 30 && this.direction !== 'ArrowLeft') this.nextDirection = 'ArrowRight';
+      else if (dx < -30 && this.direction !== 'ArrowRight') this.nextDirection = 'ArrowLeft';
+    } else {
+      if (dy > 30 && this.direction !== 'ArrowUp') this.nextDirection = 'ArrowDown';
+      else if (dy < -30 && this.direction !== 'ArrowDown') this.nextDirection = 'ArrowUp';
+    }
+  }
 }
 
 /*
 Features:
-- Simple snake game playable with arrow keys.
-- Snake grows when eating the red ball.
-- Game over on collision with walls or itself.
-- Displays current score.
-- Responsive to "Start Game" button.
+- Classic snake game with:
+  - Growing snake, ball eating, and game over on collision.
+  - High score tracking (localStorage).
+  - Selectable difficulty levels (easy, normal, hard).
+  - Sound effects for eating and game over.
+  - Touch controls for mobile devices.
+  - Current score and high score display.
 */
