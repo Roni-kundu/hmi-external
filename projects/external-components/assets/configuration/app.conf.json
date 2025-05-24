@@ -1,1 +1,48 @@
-{}
+{
+  "TestELC": {
+    "headerField": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/header.field.json"
+    },
+    "headerSection": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/header.section.json"
+    },
+    "field": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/body.field.json"
+    },
+    "section": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/body.section.json"
+    },
+    "footerField": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/footer.field.json"
+    },
+    "footerSection": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/footer.section.json"
+    },
+    "data": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/body.data.json"
+    },
+    "navField": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/nav.field.json"
+    },
+    "navSection": {
+      "fetchFromLocal": true,
+      "localURL": "./assets/pageLayout/TestELC/TestELC/nav.section.json"
+    },
+    "authGuardConfig": {
+      "enabled": false,
+      "conditions": []
+    },
+    "globalPageSettings": {
+      "title": "TestELC",
+      "layoutProperties": null
+    }
+  }
+}
